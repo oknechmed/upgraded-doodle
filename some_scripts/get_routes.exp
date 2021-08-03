@@ -1,0 +1,73 @@
+#!/usr/bin/expect
+
+set timeout -1
+set sen_slow {100 .5}
+
+#####User data#######
+
+#send_user "enter login: "
+#expect_user -re "(.*)\n"
+#set logname $expect_out(1,string)
+
+#####Manual enter pwd#######
+#send_user "enter password: "
+#expect_user -re "(.*)\n"
+#set passwd $expect_out(1,string)
+
+#send_user "enter root password: "
+#expect_user -re "(.*)\n"
+#set rpasswd $expect_out(1,string)
+
+
+set stations [open "./stations.csv" r]
+foreach entry [split [read $stations] "\n"] {
+    set entry [split $entry ";"]
+    set tunl_port [lindex $entry 3]
+    set repo_addr [lindex $entry 1]
+    set repo_port [lindex $entry 0]
+    set http_port [lindex $entry 2]
+    set user_passwd [lindex $entry 4]
+####Commands####
+    spawn ssh -o ConnectTimeout=10 user@127.0.0.1 -p$tunl_port 
+    expect {
+        "es/no)?" {
+                exp_send "yes\n"
+                exp_continue
+                }
+        "fingerprint])?" {
+                exp_send "yes\n"
+                exp_continue
+                }
+        "assword:" { exp_send "$user_passwd\n" }
+        "Connection" { catch {exp_close}; exp_wait; continue }
+    }
+    expect "]"
+    send "sudo su\n"
+    expect "]"
+    send "echo '###rt_tables###' > /home/user/routes_$tunl_port.txt\n"
+    expect "]"
+    send "cd /etc/iproute2/\n"
+    expect "]"
+    send "grep .* rt_tables >> /home/user/routes_$tunl_port.txt\n"
+    expect "]"
+    send "echo '' >> /home/user/routes_$tunl_port.txt\n"
+    expect "]"
+    send "cd /etc/sysconfig/network-scripts/\n"
+    expect "]"
+    send "echo '###route_eth###' >> /home/user/routes_$tunl_port.txt\n"
+    expect "]"
+    send "grep .* \$(ls -1 | grep route-eth) >> /home/user/routes_$tunl_port.txt\n"
+    expect "]"
+    send "echo '' >> /home/user/routes_$tunl_port.txt\n"
+    expect "]"
+    send "echo '###rule-eth###' >> /home/user/routes_$tunl_port.txt\n"
+    expect "]"
+    send "grep .* \$(ls -1 | grep rule-eth) >> /home/user/routes_$tunl_port.txt\n"
+    expect "]"
+    send "exit\n"
+    expect "]"
+    send "exit\n"
+    spawn scp -o ConnectTimeout=10 -P$tunl_port user@127.0.0.1:/home/user/routes_$tunl_port.txt ./get_routes/ 
+    expect "assword:" { exp_send "$passwd\n" }
+    expect eof
+}
