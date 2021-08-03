@@ -1,0 +1,52 @@
+---
+- name: "Deploy MariaDB"
+  import_tasks: mariadb_deploy.yml
+  tags: deploy
+
+- name: "Synchronize databases"
+  import_tasks: mariadb_setup_db.yml
+  tags: sync_db
+
+- name: "Check access to master_one"
+  community.mysql.mysql_query:
+    login_host: "{{ mariadb_repl.server_one.srv_addr }}"
+    login_port: 3306
+    login_user: "root"
+    login_password: "{{ mariadb.db_root_password }}"
+    query: "SELECT 1"
+  register: master_one_access
+  until: not master_one_access.failed
+  ignore_errors: yes
+
+- debug:
+    msg: "MariaDB for the {{ mariadb_repl.server_one.srv_addr }} host is available"
+  when:
+    - not master_one_access.failed
+
+- name: "Check access to master_two"
+  community.mysql.mysql_query:
+    login_host: "{{ mariadb_repl.server_two.srv_addr }}"
+    login_port: 3306
+    login_user: "root"
+    login_password: "{{ mariadb.db_root_password }}"
+    query: "SELECT 1"
+  register: master_two_access
+  until: not master_two_access.failed
+  ignore_errors: yes
+
+- debug:
+    msg: "MariaDB for the {{ mariadb_repl.server_two.srv_addr }} host is available"
+  when:
+    - not master_two_access.failed
+
+- block:
+    - name: "Configure master_one"
+      import_tasks: master_one.yml
+      delegate_to: "{{ mariadb_repl.server_one.inventory_hostname }}"
+      tags: master_one
+
+    - name: "Configure master_two"
+      import_tasks: master_two.yml
+      delegate_to: "{{ mariadb_repl.server_two.inventory_hostname }}"
+      tags: master_two
+  when: not master_one_access.failed and not master_two_access.failed

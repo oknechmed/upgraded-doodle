@@ -1,0 +1,7 @@
+---
+ - name: MongoDB installation
+   hosts: "{{ target }}"
+
+   roles:
+    - role: mongodb_deploy
+      become: yes

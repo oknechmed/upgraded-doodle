@@ -1,0 +1,40 @@
+- name: Run arbiter on primary server
+  block:
+    - name: "Mkdir {{ mongodb.directories.work_dir }}/arbitrator for arbiter"
+      file:
+        path: "{{ mongodb.directories.work_dir }}/arbitrator"
+        state: directory
+        owner: mongod
+        group: mongod
+        mode: "0755"
+    - name: "Enabling arbiter on primary in crontab"
+      cron:
+        name: "arbiter for mongodb"
+        minute: "30"
+        job: "mongod --dbpath {{ mongodb.directories.work_dir }}/arbitrator --bind_ip 127.0.0.1,{{ mongodb_repl.server_arbiter.srv_addr }} --port {{ mongodb_repl.server_arbiter.port }} --replSet {{ mongodb_repl.repl_set_name }} --fork --logpath {{ mongodb.directories.work_dir }}/arbitrator/arbtr.log"
+        user: "{{ cron_user }}"
+      register: cron_result
+    - name: "Start arbiter on primary"
+      block:
+        - name: Run shell command
+          shell: "mongod --dbpath {{ mongodb.directories.work_dir }}/arbitrator --bind_ip 127.0.0.1,{{ mongodb_repl.server_arbiter.srv_addr }} --port {{ mongodb_repl.server_arbiter.port }} --replSet {{ mongodb_repl.repl_set_name }} --fork --logpath {{ mongodb.directories.work_dir }}/arbitrator/arbtr.log"
+          register: sh_result
+        - name: "Display stdout shell command"
+          debug:
+            msg:
+              - "Shell command: {{ sh_result.cmd | to_yaml }}"
+              - "Command is Failed?: {{ sh_result.failed }}"
+      when: "cron_result.changed is true"
+  when:
+    - mongodb_repl.server_primary.srv_addr == mongodb_repl.server_arbiter.srv_addr
+
+- name: "Create replicaset {{ mongodb_repl.repl_set_name }}"
+  community.mongodb.mongodb_replicaset:
+    replica_set: "{{ mongodb_repl.repl_set_name }}"
+    arbiter_at_index: 2
+    members:
+      - host: "{{ mongodb_repl.server_primary.srv_addr }}:{{ mongodb_repl.server_primary.port}}"
+        priority: 3
+        #priority: "{{ mongodb_repl.server_primary.priority | int }}"
+      - host: "{{ mongodb_repl.server_secondary.srv_addr }}:{{ mongodb_repl.server_secondary.port}}"
+      - host: "{{ mongodb_repl.server_arbiter.srv_addr }}:{{ mongodb_repl.server_arbiter.port}}"

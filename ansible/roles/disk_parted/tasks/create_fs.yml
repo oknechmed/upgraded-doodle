@@ -1,0 +1,8 @@
+---
+# tasks file for disk_parted
+
+- name: Create filesystems on lv
+  filesystem:
+    fstype: "{{ item.value.part_fs }}"
+    dev: "/dev/mapper/{{ vg_name }}-{{ item.key }}"
+  with_dict: "{{ lv_partitions }}"

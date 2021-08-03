@@ -1,0 +1,85 @@
+#
+# These groups are read by MariaDB server.
+# Use it for options that only the server (but not clients) should see
+#
+# See the examples of server my.cnf files in /usr/share/mysql/
+#
+
+# this is read by the standalone daemon and embedded servers
+[server]
+
+# this is only for the mysqld standalone daemon
+[mysqld]
+
+datadir={{ mariadb.directories.work_dir }}
+socket={{  mariadb.directories.work_dir }}/mariadb.sock
+
+log-error={{  mariadb.directories.log_dir }}/error.log
+pid-file={{  mariadb.directories.pid_dir }}/mariadb.pid
+
+event_scheduler = 1
+innodb_file_per_table = 1
+
+####Данный сет опций приводится для примера, после запуска значения обязательно поменять для конкретного сервера
+innodb_buffer_pool_size = 6G
+innodb_log_file_size = 650M
+innodb_log_buffer_size = 16M
+max_heap_table_size = 1024M
+tmp_table_size=1024M
+######################################
+
+#I am master
+log-bin = {{  mariadb.directories.work_dir }}/mariadb_bin.log
+{% if repl_server_num == "primary" %}
+server-id={{ mariadb_repl.server_one.server_id }}
+{% elif repl_server_num == "secondary" %}
+server-id={{ mariadb_repl.server_two.server_id }}
+{% endif %}
+
+{% for item in mariadb_repl.binlog_do_db %}
+binlog_do_db = {{ item }}
+{% endfor %}
+auto_increment_offset = 1
+auto_increment_increment = 2
+#slave-compressed=1
+binlog_format=ROW
+
+expire_logs_days = 60
+
+log_bin_trust_function_creators=1
+
+max_connect_errors=10000
+
+#
+# * Galera-related settings
+#
+[galera]
+# Mandatory settings
+#wsrep_on=ON
+#wsrep_provider=
+#wsrep_cluster_address=
+#binlog_format=row
+#default_storage_engine=InnoDB
+#innodb_autoinc_lock_mode=2
+#
+# Allow server to accept connections on all interfaces.
+#
+#bind-address=0.0.0.0
+#
+# Optional setting
+#wsrep_slave_threads=1
+#innodb_flush_log_at_trx_commit=0
+
+# this is only for embedded server
+[embedded]
+
+# This group is only read by MariaDB servers, not by MySQL.
+# If you use the same .cnf file for MySQL and MariaDB,
+# you can put MariaDB-only options here
+[mariadb]
+
+# This group is only read by MariaDB-10.5 servers.
+# If you use the same .cnf file for MariaDB of different versions,
+# use this group for options that older servers don't understand
+[mariadb-10.5]
+

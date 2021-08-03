@@ -1,0 +1,12 @@
+---
+# handlers file for mongodb_deploy\
+
+ - name: Systemctl daemon-reload
+   systemd:
+     daemon_reload: yes
+
+ - name: Enable MongoDB
+   systemd:
+     name: mongod
+     state: restarted
+     enabled: yes

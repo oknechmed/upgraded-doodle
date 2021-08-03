@@ -1,0 +1,15 @@
+---
+# tasks file for mongodb_deploy
+
+- name: "Set replica name {{ mongodb_repl.repl_set_name }} in file mongo.conf"
+  blockinfile:
+    path: "{{ mongodb.dest.mongodb_server_file }}"
+    insertafter: "^#replication:"
+    block: |
+      replication:
+         replSetName: "{{ mongodb_repl.repl_set_name }}"
+  notify:
+    - Enable MongoDB
+
+- name: Force handlers
+  meta: flush_handlers

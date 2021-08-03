@@ -1,0 +1,55 @@
+---
+# defaults file for mariadb_deploy
+
+base_dir: "/usr/data"
+
+mariadb:
+  repo_baseurl: "https://yum.mariadb.org/10.5/centos7-amd64"
+  repo_gpgkey: "https://yum.mariadb.org/RPM-GPG-KEY-MariaDB"
+  db_root_password: rpassword
+
+  db_user: demchenko
+  db_password: rpassword
+
+  import_dumps_enabled: false
+  create_databases_enabled: true
+  create_users_enabled: true
+  databases:
+    - Blah
+    - Meh
+
+  directories:
+    log_dir: /var/log/mariadb
+    work_dir: "{{ base_dir }}/db/mariadb"
+    pid_dir: /var/run/mariadb
+
+  src:
+    systemd_file: mariadb.service.j2
+    mariadb_server_file: server.cnf.j2
+    mariadb_client_file: mysql-clients.cnf.j2
+    repo_file: mariadb.repo.j2
+
+  dest:
+    systemd_file: /usr/lib/systemd/system/mariadb.service
+    mariadb_server_file: /etc/my.cnf.d/server.cnf
+    mariadb_client_file: /etc/my.cnf.d/mysql-clients.cnf
+    repo_file: /etc/yum.repos.d/mariadb.repo
+
+mariadb_repl:
+  repl_login: repl
+  repl_pwd: rpassword
+
+  binlog_do_db:
+    - Blah
+
+  server_one:
+    inventory_hostname: "vagrant_primary"
+    server_id: 1
+    hostname: sbdb1
+    srv_addr: "172.16.12.122"
+
+  server_two:
+    inventory_hostname: "vagrant_secondary"
+    server_id: 2
+    hostname: sbdb2
+    srv_addr: "172.16.12.222"

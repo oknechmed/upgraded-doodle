@@ -1,0 +1,11 @@
+---
+# tasks file for disk_parted
+
+ - name: "Tasks for create disk partitions"
+   import_tasks: "create_partitions.yml"
+
+ - name: "Tasks for create filesystem on partitions"
+   import_tasks: "create_fs.yml"
+
+ - name: "Tasks for mount partitions"
+   import_tasks: "mount_partitions.yml"

@@ -1,0 +1,13 @@
+---
+- name: "Deploy MongoDB"
+  import_tasks: mongodb_deploy.yml
+  tags: deploy
+
+- name: "Replication MongoDB"
+  import_tasks: mongodb_replication.yml
+  tags: replication
+
+- name: "Setup primary server"
+  import_tasks: mongodb_primary.yml
+  tags: repl_primary
+  when: repl_server_num == "primary"

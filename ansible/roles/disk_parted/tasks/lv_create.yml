@@ -1,0 +1,13 @@
+---
+- name: "Check that the {{ item.key }} volume exists"
+  stat:
+    path: /dev/mapper/{{ vg_name }}-{{ item.key }}
+  register: lv_result
+
+- name: "Create logical volume for {{ item.key }}"
+  lvol:
+    vg: "{{ vg_name }}"
+    lv: "{{ item.key }}"
+    size: "{{ item.value.part_size }}"
+  when:
+    - not lv_result.stat.exists

@@ -1,0 +1,67 @@
+---
+# tasks file for mongodb_deploy
+- name: "Install pymongo for MongoDB"
+  yum:
+    name: pymongo
+    state: present
+
+- name: Add MongoDB repository
+  template:
+    src: "{{ role_path }}/templates/{{ mongodb.src.repo_file }}"
+    dest: "{{ mongodb.dest.repo_file }}"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Install MongoDB
+  yum:
+    name: mongodb-org
+    state: latest
+
+- name: Create directories
+  file:
+    path: "{{ item.value }}"
+    state: directory
+    recurse: yes
+    mode: "0755"
+    owner: mongod
+    group: mongod
+  with_dict: "{{ mongodb.directories }}"
+
+- name: Change status SELINUX to permissive
+  selinux:
+    policy: targeted
+    state: permissive
+
+- name: Disable firewalld
+  systemd:
+    name: firewalld
+    state: stopped
+    enabled: no
+  register: firewalld_result
+  failed_when:
+    - firewalld_result.failed == true
+    - "'Could not find the requested service firewalld' not in firewalld_result.msg"
+
+- name: Copy systemd unit from /templates to "{{ mongodb.dest.systemd_file }}"
+  template:
+    src: "{{ role_path }}/templates/{{ mongodb.src.systemd_file }}"
+    dest: "{{ mongodb.dest.systemd_file }}"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - Systemctl daemon-reload
+
+- name: Force handlers
+  meta: flush_handlers
+
+- name: Copy server config from /templates to "{{ mongodb.dest.mongodb_server_file }}"
+  template:
+    src: "{{ role_path }}/templates/{{ mongodb.src.mongodb_server_file }}"
+    dest: "{{ mongodb.dest.mongodb_server_file }}"
+    owner: mongod
+    group: mongod
+    mode: 0755
+  notify:
+    - Enable MongoDB

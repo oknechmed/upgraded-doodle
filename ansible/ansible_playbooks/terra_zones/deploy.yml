@@ -1,0 +1,13 @@
+---
+- name: "Run ansible roles"
+  hosts: "{{ target }}"
+
+  tasks:
+    - include_role:
+        name: "{{ deploy_task }}"
+      loop:
+        - base_soft_install
+        - mariadb_deploy
+      loop_control:
+        loop_var: deploy_task
+  become: yes

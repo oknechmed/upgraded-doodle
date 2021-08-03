@@ -1,0 +1,9 @@
+---
+# defaults file for base_soft_install
+
+user: demchenko
+user_pwd: password
+
+create_user: true
+custom_repo_base: false
+custom_repo_epel: false

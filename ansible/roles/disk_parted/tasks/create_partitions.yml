@@ -1,0 +1,66 @@
+---
+# tasks file for disk_parted
+
+- name: "Create partitions on devices"
+  block:
+    - name: install parted
+      package:
+        name: parted
+        state: present
+
+    - name: "Read information for /dev/{{ disk_parted.device_name }}"
+      parted:
+        device: "/dev/{{ disk_parted.device_name }}"
+        unit: s
+      register: device_info
+
+    ############DIAGNOSTIC BLOCK##################
+    #- name: "Print information for /dev/{{ disk_parted.device_name }}"
+    #  debug:
+    #    msg:
+    #      - "{{ device_info }}"
+    #      - "{{ device_info.disk }}"
+    #      - "{{ device_info.partitions[-1].end }}"
+    #      - "{{ device_info.partitions[-1].num }}"
+    #      - "{{ ansible_lvm.lvs }}"
+
+    - name: "Create partition for empty /dev/{{ disk_parted.device_name }}"
+      block:
+        - name: "Create new physical partition /dev/{{ disk_parted.device_name }}{{ disk_parted.device_num }}"
+          parted:
+            device: "/dev/{{ disk_parted.device_name }}"
+            number: "{{ disk_parted.device_num }}"
+            part_type: "{{ disk_parted.device_type }}"
+            label: "{{ disk_parted.device_label }}"
+            flags: [lvm]
+            state: present
+      when:
+        - device_info.disk.table == "unknown"
+        - device_info.partitions[-1] is undefined
+
+    - name: "Check that the /dev/{{ disk_parted.device_name }}{{ disk_parted.device_num }} exist"
+      stat:
+        path: /dev/{{ disk_parted.device_name }}{{ disk_parted.device_num }}
+      register: dev_result
+
+    - name: "Create new physical partition /dev/{{ disk_parted.device_name }}{{ disk_parted.device_num }}"
+      parted:
+        device: "/dev/{{ disk_parted.device_name }}"
+        number: "{{ disk_parted.device_num }}"
+        part_type: "{{ disk_parted.device_type }}"
+        label: "{{ disk_parted.device_label }}"
+        flags: [lvm]
+        state: present
+        unit: s
+        part_end: "100%"
+        part_start: "{{ device_info.partitions[-1].end + 2 }}s"
+      when: not dev_result.stat.exists
+
+- name: "Create volume group for /dev/{{ disk_parted.device_name }}{{ disk_parted.device_num }}"
+  lvg:
+    vg: "{{ vg_name }}"
+    pvs: "/dev/{{ disk_parted.device_name }}{{ disk_parted.device_num }}"
+
+- name: Create logical volumes
+  include_tasks: lv_create.yml
+  with_dict: "{{ lv_partitions }}"

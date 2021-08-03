@@ -1,0 +1,86 @@
+---
+- name: "Create user for server_id = {{ mariadb_repl.server_one.server_id }}"
+  community.mysql.mysql_user:
+    check_implicit_admin: yes
+    login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+    login_host: "localhost"
+    login_user: "root"
+    login_password: "{{ mariadb.db_root_password }}"
+    name: "{{ mariadb_repl.repl_login }}"
+    host: "{{ mariadb_repl.server_two.srv_addr }}"
+    password: "{{ mariadb_repl.repl_pwd }}"
+    priv: "*.*:ALL"
+    state: present
+
+- name: "Check replication status"
+  community.mysql.mysql_replication:
+    login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+    login_host: "localhost"
+    login_user: "root"
+    login_password: "{{ mariadb.db_root_password }}"
+    mode: getslave
+  register: slave_status
+
+- name: "Check master status for server_id = {{ mariadb_repl.server_two.server_id }}"
+  community.mysql.mysql_replication:
+    login_host: "{{ mariadb_repl.server_two.srv_addr }}"
+    login_port: 3306
+    login_user: "root"
+    login_password: "{{ mariadb.db_root_password }}"
+    mode: getmaster
+  register: master_two_status
+
+- name: Stop slave
+  community.mysql.mysql_replication:
+    login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+    login_host: "localhost"
+    login_user: "root"
+    login_password: "{{ mariadb.db_root_password }}"
+    mode: stopslave
+
+- name: Reset slave
+  community.mysql.mysql_replication:
+    login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+    login_host: "localhost"
+    login_user: "root"
+    login_password: "{{ mariadb.db_root_password }}"
+    mode: resetslave
+
+- name: "Show master status for {{ mariadb_repl.server_two.srv_addr }} host"
+  debug:
+    msg:
+      - "{{ master_two_status }}"
+
+- name: "Change MASTER for server_id = {{ mariadb_repl.server_one.server_id }}"
+  community.mysql.mysql_replication:
+    login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+    login_host: "localhost"
+    login_user: "root"
+    login_password: "{{ mariadb.db_root_password }}"
+    mode: changemaster
+    master_host: "{{ mariadb_repl.server_two.hostname }}"
+    master_user: "{{ mariadb_repl.repl_login }}"
+    master_password: "{{ mariadb_repl.repl_pwd }}"
+    master_log_file: "{{ master_two_status.File }}"
+    master_log_pos: "{{ master_two_status.Position }}"
+
+- name: Start slave
+  community.mysql.mysql_replication:
+    login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+    login_host: "localhost"
+    login_user: "root"
+    login_password: "{{ mariadb.db_root_password }}"
+    mode: startslave
+
+- name: "Check replication status"
+  community.mysql.mysql_replication:
+    login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+    login_host: "localhost"
+    login_user: "root"
+    login_password: "{{ mariadb.db_root_password }}"
+    mode: getslave
+  register: slave_status
+
+- name: "Show slave status for {{ mariadb_repl.server_one.srv_addr }} host"
+  debug:
+    msg: "{{ slave_status }}"

@@ -1,0 +1,4 @@
+---
+- name: "Mount partitions"
+  include_tasks: mount_blocks.yml
+  with_dict: "{{ lv_partitions }}"

@@ -1,0 +1,12 @@
+[local-base]
+name=CentOS-$releasever - Local Base
+baseurl=http://192.168.0.7/file_storage/centos/$releasever/BaseOS/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-8
+priority=1
+[local-updates]
+name=CentOS-$releasever - Local Updates
+baseurl=http://192.168.0.7/file_storage/centos/$releasever/AppStream/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-8
+priority=1

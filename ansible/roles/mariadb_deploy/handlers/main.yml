@@ -1,0 +1,5 @@
+---
+# handlers file for mariadb_deploy
+- name: Systemctl daemon-reload
+  systemd:
+    daemon_reload: yes

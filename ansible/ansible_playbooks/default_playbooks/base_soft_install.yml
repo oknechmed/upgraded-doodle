@@ -1,0 +1,7 @@
+---
+- name: System software installation
+  hosts: "{{ target }}"
+
+  roles:
+    - role: base_soft_install
+      become: yes

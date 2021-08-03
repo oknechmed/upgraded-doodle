@@ -1,0 +1,102 @@
+---
+- name: Add hostnames and IP-address into /etc/hosts
+  blockinfile:
+    path: "/etc/hosts"
+    block: |
+      {{ mariadb_repl.server_one.srv_addr }} {{ mariadb_repl.server_one.hostname }}
+      {{ mariadb_repl.server_two.srv_addr }} {{ mariadb_repl.server_two.hostname }}
+
+- name: "Make root privileges for {{ mariadb_repl.server_one.srv_addr }} host"
+  mysql_user:
+    check_implicit_admin: yes
+    login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+    login_host: "localhost"
+    login_user: "root"
+    login_password: "{{ db_root_password }}"
+    name: "root"
+    host: "{{ mariadb_repl.server_one.srv_addr }}"
+    password: "{{ mariadb.db_password }}"
+    priv: "*.*:ALL"
+    state: present
+
+- name: "Make root privileges for {{ mariadb_repl.server_two.srv_addr }} host"
+  mysql_user:
+    check_implicit_admin: yes
+    login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+    login_host: "localhost"
+    login_user: "root"
+    login_password: "{{ db_root_password }}"
+    name: "root"
+    host: "{{ mariadb_repl.server_two.srv_addr }}"
+    password: "{{ mariadb.db_password }}"
+    priv: "*.*:ALL"
+    state: present
+
+- name: Create databases
+  mysql_db:
+    login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+    login_host: "localhost"
+    login_user: "root"
+    login_password: "{{ db_root_password }}"
+    name: "{{ item }}"
+    encoding: utf8
+  with_items: "{{ mariadb.databases }}"
+  when: mariadb.create_databases_enabled
+
+- name: Import databases dumps
+  block:
+    - name: Create dump directory
+      file:
+        path: "/tmp/dump_backup"
+        state: directory
+        recurse: yes
+        mode: "0755"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+    - name: Copy dumps on server
+      copy:
+        src: "{{ role_path }}/templates/dump_backup/{{ item }}.gz"
+        dest: /tmp/dump_backup/
+      with_items: "{{ mariadb.databases }}"
+    - name: Import dumps
+      mysql_db:
+        check_implicit_admin: yes
+        login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+        login_host: "localhost"
+        login_user: "root"
+        login_password: "{{ db_root_password }}"
+        name: "{{ item }}"
+        state: import
+        target: "/tmp/dump_backup/{{ item }}.gz"
+      with_items: "{{ mariadb.databases }}"
+  when: mariadb.import_dumps_enabled
+
+  #when: false
+- name: Create users for databases
+  block:
+    - name: Create users for localhost
+      mysql_user:
+        check_implicit_admin: yes
+        login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+        login_host: "localhost"
+        login_user: "root"
+        login_password: "{{ db_root_password }}"
+        name: "{{ mariadb.db_user }}"
+        host: "localhost"
+        password: "{{ mariadb.db_password }}"
+        priv: "{{ item }}.*:ALL"
+      with_items: "{{ mariadb.databases }}"
+
+    - name: Create users for %
+      mysql_user:
+        check_implicit_admin: yes
+        login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+        login_host: "localhost"
+        login_user: "root"
+        login_password: "{{ db_root_password }}"
+        name: "{{ mariadb.db_user }}"
+        host: "%"
+        password: "{{ mariadb.db_password }}"
+        priv: "{{ item }}.*:ALL"
+      with_items: "{{ mariadb.databases }}"
+  when: mariadb.create_users_enabled

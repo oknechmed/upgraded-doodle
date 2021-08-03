@@ -1,0 +1,7 @@
+---
+ - name: MariaDB installation
+   hosts: "{{ target }}"
+
+   roles:
+    - role: mariadb_deploy
+      become: yes

@@ -1,0 +1,117 @@
+---
+# tasks file for mariadb_deploy
+
+- name: Add MariaDB repository
+  template:
+    src: "{{ role_path }}/templates/{{ mariadb.src.repo_file }}"
+    dest: "{{ mariadb.dest.repo_file }}"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Install MariaDB
+  yum:
+    name: mariadb-server
+    state: latest
+
+- name: "Install Python tools for ansible"
+  yum:
+    name: python2-PyMySQL
+
+- name: Create directories
+  file:
+    path: "{{ item.value }}"
+    state: directory
+    recurse: yes
+    mode: "0755"
+    owner: mysql
+    group: mysql
+  with_dict: "{{ mariadb.directories }}"
+
+- name: Systemd unit edit
+  block:
+    - name: Set ProtectSystem to false
+      lineinfile:
+        path: "{{ mariadb.dest.systemd_file }}"
+        regexp: "^ProtectSystem="
+        line: "ProtectSystem=false"
+    - name: Set ProtectHome to false
+      lineinfile:
+        path: "{{ mariadb.dest.systemd_file }}"
+        regexp: "^ProtectHome="
+        line: "ProtectHome=false"
+    - name: Add ExecStartPre commands
+      blockinfile:
+        path: "{{ mariadb.dest.systemd_file }}"
+        insertafter: '^\[Service]'
+        block: |
+          ExecStartPre=/usr/bin/mkdir -p /var/run/mariadb
+          ExecStartPre=/usr/bin/chown mysql:mysql /var/run/mariadb
+
+- name: Systemctl daemon-reload
+  systemd:
+    daemon_reload: yes
+
+- name: Copy server config from /templates to "{{ mariadb.dest.mariadb_server_file }}"
+  template:
+    src: "{{ role_path }}/templates/{{ mariadb.src.mariadb_server_file }}"
+    dest: "{{ mariadb.dest.mariadb_server_file }}"
+    owner: mysql
+    group: mysql
+    mode: 0644
+
+- name: Copy client config from /templates  to "{{ mariadb.dest.mariadb_client_file }}"
+  template:
+    src: "{{ role_path }}/templates/{{ mariadb.src.mariadb_client_file }}"
+    dest: "{{ mariadb.dest.mariadb_client_file }}"
+    owner: mysql
+    group: mysql
+    mode: 0644
+
+- name: Change status SELINUX to permissive
+  selinux:
+    policy: targeted
+    state: permissive
+
+- name: Disable firewalld
+  systemd:
+    name: firewalld
+    state: stopped
+    enabled: no
+  register: firewalld_result
+  failed_when:
+    - firewalld_result.failed == true
+    - "'Could not find the requested service firewalld' not in firewalld_result.msg"
+
+- name: Init database directory
+  block:
+    - name: Send init command to shell
+      shell: "mysql_install_db --user=mysql --basedir=/usr --datadir={{ mariadb.directories.work_dir }}"
+      register: result
+
+    - name: Result of execution command
+      debug:
+        msg:
+          - "Shell Command: {{ result.cmd | to_yaml }}"
+          - "Command is Failed?: {{ result.failed }}"
+
+- name: Enable MariaDB
+  systemd:
+    name: mariadb
+    state: restarted
+    enabled: yes
+
+- name: Create user root for MariaDB
+  community.mysql.mysql_user:
+    check_implicit_admin: yes
+    login_unix_socket: "{{ mariadb.directories.work_dir }}/mariadb.sock"
+    login_host: "localhost"
+    login_user: "root"
+    login_password: ""
+    name: "root"
+    password: "{{ mariadb.db_root_password }}"
+    state: present
+  register: result
+  failed_when:
+    - result.failed == true
+    - "'using password: NO' not in result.msg"

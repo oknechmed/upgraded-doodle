@@ -1,0 +1,56 @@
+---
+# tasks file for disk_parted
+
+- name: "Make swap on /dev/{{ vg_name }}/{{ item.key }}"
+  block:
+    - name: "Shell command for make swap"
+      shell: "/sbin/mkswap -L swap /dev/{{ vg_name }}/{{ item.key }}"
+      register: mkswap_result
+      failed_when:
+        - mkswap_result.rc != 0
+        - "'is mounted' not in mkswap_result.stderr"
+
+    - name: "Display result about mkswap shell command"
+      debug:
+        msg:
+          - "Shell command: {{ mkswap_result.cmd | to_yaml }}"
+          - "Command is Failed?: {{ mkswap_result.failed }}"
+
+    - name: "Mount /dev/{{ vg_name }}/{{ item.key }}"
+      mount:
+        path: none
+        src: /dev/{{ vg_name }}/{{ item.key }}
+        fstype: swap
+        state: present
+
+    - name: "Shell command for swapon"
+      shell: "swapon /dev/{{ vg_name }}/{{ item.key }}"
+      register: mkswap_result
+      failed_when:
+        - mkswap_result.rc != 0
+        - "'Device or resource busy' not in mkswap_result.stderr"
+
+    - name: "Display result about mkswap shell command"
+      debug:
+        msg:
+          - "Shell command: {{ mkswap_result.cmd | to_yaml }}"
+          - "Command is Failed?: {{ mkswap_result.failed }}"
+  when: item.key|string == "swap"
+
+- name: "Mount /dev/{{ vg_name }}/{{ item.key }}"
+  block:
+    - name: "Create directory {{ item.value.part_path }}"
+      file:
+        path: "{{ item.value.part_path }}"
+        state: directory
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: 0755
+
+    - name: "Mount /dev/{{ vg_name }}/{{ item.key }} in {{ item.value.part_path }}"
+      mount:
+        path: "{{ item.value.part_path }}"
+        src: /dev/{{ vg_name }}/{{ item.key }}
+        fstype: "{{ item.value.part_fs }}"
+        state: mounted
+  when: item.key|string != "swap"

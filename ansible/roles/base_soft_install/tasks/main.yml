@@ -1,0 +1,55 @@
+---
+# tasks file for base_soft_install
+
+- name: "Create user {{ user }}"
+  user:
+    name: "{{ user }}"
+    group: "{{ user }}"
+    password: "{{ user_pwd }}"
+  when: create_user == true
+
+- name: "Repo setup"
+  block:
+    - name: "Backup old repositories"
+      command: "cp -Rf /etc/yum.repos.d /home/{{ user }}/backup"
+
+    - name: "Copy repositories from templates"
+      template:
+        src: "{{ item }}"
+        dest: "/etc/yum.repos.d/{{ item | basename | regex_replace('\\.j2$', '') }}"
+      with_fileglob:
+        - "{{ role_path }}/templates/CentOS*.j2"
+  when: custom_repo_base == true
+
+- name: "Install Base soft"
+  yum:
+    name: "{{ packages }}"
+  vars:
+    packages:
+      - epel-release
+      - perl
+      - mc
+      - vim
+      - tcpdump
+      - openssh-clients
+      - chrony
+      - net-tools
+      - telnet
+      - lsof
+      - ftp
+      - vsftpd
+      - python3
+      - lvm2
+
+- name: "Copy repositories from templates"
+  template:
+    src: "{{ role_path }}/templates/epel.repo.j2"
+    dest: "/etc/yum.repos.d/epel.repo"
+  when: custom_repo_epel == true
+
+- name: "Install Python tools for ansible"
+  yum:
+    name: "{{ packages }}"
+  vars:
+    packages:
+      - python-psutil

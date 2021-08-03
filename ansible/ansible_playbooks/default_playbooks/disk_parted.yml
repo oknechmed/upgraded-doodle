@@ -1,0 +1,7 @@
+---
+- name: Disk partitioning
+  hosts: "{{ target }}"
+
+  roles:
+   - role: disk_parted
+     become: yes
