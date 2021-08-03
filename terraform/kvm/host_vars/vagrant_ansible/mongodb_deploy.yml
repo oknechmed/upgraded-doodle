@@ -1,0 +1,45 @@
+---
+# defaults file for mongodb_deploy
+
+cron_user: root
+
+base_dir: "/usr/data"
+
+mongodb:
+  repo_baseurl: "https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/4.4/x86_64/"
+  repo_gpgkey: "https://www.mongodb.org/static/pgp/server-4.4.asc"
+
+  directories:
+    log_dir: /var/log/mongodb
+    work_dir: "{{ base_dir }}/db/mongodb"
+    pid_dir: /var/run/mongodb
+
+  src:
+    systemd_file: mongod.service.j2
+    mongodb_server_file: mongod.conf.j2
+    repo_file: mongodb.repo.j2
+
+  dest:
+    systemd_file: /usr/lib/systemd/system/mongod.service
+    mongodb_server_file: /etc/mongod.conf
+    repo_file: /etc/yum.repos.d/mongodb.repo
+
+mongodb_repl:
+
+  repl_set_name: rs_def
+
+  server_primary:
+    port: 27017
+    hostname: hostname1
+    srv_addr: "192.168.122.64"
+    priority: 3
+
+  server_secondary:
+    port: 27017
+    hostname: hostname2
+    srv_addr: "192.168.122.252"
+    priority: 3
+
+  server_arbiter:
+    port: 27017
+    srv_addr: '192.168.122.126'

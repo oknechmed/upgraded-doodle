@@ -1,0 +1,32 @@
+---
+# defaults file for disk_parted
+
+base_dir: "/usr/data"
+
+disk_parted:
+  device_name: vdb
+  device_num: 1
+  device_type: primary
+  device_label: msdos
+vg_name: data
+
+lv_partitions:
+  swap:
+    part_size: "1g"
+    #part_size: "{{ ansible_memory_mb.real.total }}m"
+    part_fs: swap
+
+  data:
+    part_size: 2g
+    part_fs: xfs
+    part_path: "{{ base_dir }}"
+
+  db:
+    part_size: 4g
+    part_fs: xfs
+    part_path: "{{ base_dir }}/db"
+
+  log:
+    part_size: 100%FREE
+    part_fs: xfs
+    part_path: "{{ base_dir }}log"

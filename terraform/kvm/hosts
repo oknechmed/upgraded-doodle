@@ -1,0 +1,44 @@
+---
+
+all:
+  children:
+    terra_zones:
+      hosts:
+        terra_centos7:
+           ansible_host: 172.16.12.12
+           ansible_port: 22
+           ansible_user: root
+           ansible_ssh_pass: password
+           repl_server_num: "primary"
+           user: root
+
+        terra_centos7two:
+           ansible_host: 172.16.12.13
+           ansible_port: 22
+           ansible_user: root
+           ansible_ssh_pass: password
+           repl_server_num: "primary"
+           user: root
+
+        vagrant_primary: 
+           ansible_host: 172.16.12.122 
+           ansible_port: 22 
+           ansible_user: 'vagrant' 
+           ansible_ssh_private_key_file: '~/practice/vagrant/.vagrant/machines/ansible/libvirt/private_key' 
+           user: vagrant 
+           repl_server_num: "primary"
+
+        vagrant_secondary: 
+           ansible_host: 172.16.12.222 
+           ansible_port: 22 
+           ansible_user: 'vagrant' 
+           ansible_ssh_private_key_file: '~/practice/vagrant/.vagrant/machines/secondary/libvirt/private_key' 
+           user: vagrant 
+           repl_server_num: "secondary"
+
+      vars:
+        # ansible_python_interpreter: /usr/bin/python3
+        set_timezone: Europe/Moscow
+        
+        base_dir: "/usr/data"
+        playbooks_src_path: "{{ inventory_dir }}/../../ansible/ansible_playbooks/default_playbooks"
