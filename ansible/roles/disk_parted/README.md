@@ -50,7 +50,7 @@ vg_name: data    # Volume group name
 Playbook
 ----------------
 
-Плэйбук находится в корневой директории, называется disk_partition.yml
+Путь: ./ansible/ansible_playbooks/default_playbooks/disk_partition.yml
 
 
 Author Information
