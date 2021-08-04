@@ -1,38 +1,38 @@
-Role Name
+MARIADB DEPLOY + REPLICATION
 =========
 
-A brief description of the role goes here.
+Данная роль предназначена для установки, настройки MariaDB, а также для настройки master-master репликации между двумя серверами MariaDB
 
-Requirements
+Требования
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+Для корректной работы роли требуется установить на конечный сервер клиентскую библиотеку PyMySQL (установка прописана в роли).
+Репликация настраивается только в случае, если оба сервера MariaDB взаимно доступны по адресам указанным в переменной `{{ mariadb_repl.<server_one или _two>.srv_addr }}`.
 
-Role Variables
+Конфигурация
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Переменные конфигураций находятся в директории `./defaults`.
+Файл конфигурации состоит из двух частей:
+1. mariadb - Содержит переменные для установки и настройки MariaDB
+2. mariadb_repl - Содержит переменные для установки и настройки репликации между серверами MariaDB
 
-Dependencies
+Структура
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+Роль состоит из нескольких tasks:
+- mariadb_deploy.yml - первоначальная установка и конфигурация MariaDB
+- mariadb_setup_db.yml - создание БД и пользователей, импорт дампов
+- master_one - настройка первого мастер сервера
+- master_two - настройка второго мастер сервера
+- main.yml - выполняет вышеперечисленные tasks. Содержит в тебе tasks для проверки доступа к MariaDB на серверах.
 
-Example Playbook
+Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
-
-License
--------
-
-BSD
+Путь: ./ansible/ansible_playbooks/default_playbooks/mariadb_deploy.yml
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Максим Демченко
