@@ -40,17 +40,17 @@ vg_name: data    # Volume group name
 ------------
 
 Роль состоит из нескольких tasks:
-create_partitions.yml - создаёт физические и логические разделы
-lv_create.yml - содержит таски для создания логических разделов, является частью create_partitions.yml
-create_fs.yml - создаёт файловую систему на разделах
-mount_partitions.yml - монтирует разделы
-mount_blocks.yml - содержит таски для монтирования разделов, является частью mount_partitions.yml
-main.yml - выполняет вышеперечисленные tasks
+- create_partitions.yml - создаёт физические и логические разделы
+- lv_create.yml - содержит таски для создания логических разделов, является частью create_partitions.yml
+- create_fs.yml - создаёт файловую систему на разделах
+- mount_partitions.yml - монтирует разделы
+- mount_blocks.yml - содержит таски для монтирования разделов, является частью mount_partitions.yml
+- main.yml - выполняет вышеперечисленные tasks
 
 Playbook
 ----------------
 
-Плэйбук находится в корневой директории, называется disk_partition_new.yml
+Плэйбук находится в корневой директории, называется disk_partition.yml
 
 
 Author Information
